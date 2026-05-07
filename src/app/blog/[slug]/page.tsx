@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
 import { notFound } from 'next/navigation'
+import Link from 'next/link' // Bu satır eksikti
 
 // SEO ve 404 önlemek için statik yolları önceden bildiriyoruz
 export async function generateStaticParams() {

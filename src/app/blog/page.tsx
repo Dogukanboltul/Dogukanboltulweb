@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
-import Link from 'next/link'
+import Link from 'next/link' // Bu satır eksikti
 
 export default function BlogPage() {
   // Yolu src/posts olarak güncelledik (Daha güvenli)
