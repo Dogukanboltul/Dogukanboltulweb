@@ -5,86 +5,61 @@ import Link from 'next/link'
 
 export default function BlogPage() {
   const postsDirectory = path.join(process.cwd(), 'src/posts')
-  
-  if (!fs.existsSync(postsDirectory)) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white">
-        <p className="text-gray-500 font-medium">Henüz yayınlanmış bir yazı bulunamadı.</p>
-      </div>
-    )
-  }
+  if (!fs.existsSync(postsDirectory)) return <div className="p-20 text-center text-white">Yazı bulunamadı.</div>
 
   const fileNames = fs.readdirSync(postsDirectory).filter(fn => fn.endsWith('.md'))
-  
-  const posts = fileNames.map((fileName) => {
-    const slug = fileName.replace(/\.md$/, '')
-    const fullPath = path.join(postsDirectory, fileName)
-    const fileContents = fs.readFileSync(fullPath, 'utf8')
+  const posts = fileNames.map(fn => {
+    const fileContents = fs.readFileSync(path.join(postsDirectory, fn), 'utf8')
     const { data } = matter(fileContents)
-    return { slug, ...data } as any
+    return { slug: fn.replace(/\.md$/, ''), ...data } as any
   })
 
-  // Yazıları tarihe göre yeniden eskiye sıralayalım
-  const sortedPosts = posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white py-20 px-6">
-      <div className="max-w-4xl mx-auto">
+    <main className="min-h-screen bg-black text-white selection:bg-blue-500/30">
+      <div className="max-w-5xl mx-auto py-24 px-8">
         
-        {/* Header Bölümü */}
-        <header className="mb-20">
-          <h1 className="text-5xl md:text-6xl font-black mb-6 tracking-tighter text-white">
-            BLOG
+        {/* Header: Daha Minimal ve Güçlü */}
+        <header className="mb-32">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-[1px] w-8 bg-blue-600"></div>
+            <span className="text-[10px] font-black tracking-[0.4em] text-blue-500 uppercase">Journal</span>
+          </div>
+          <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-8 leading-[0.8]">
+            STRATEJİ <br /> <span className="text-gray-800">NOTLARI</span>
           </h1>
-          <p className="text-gray-400 text-lg md:text-xl max-w-2xl leading-relaxed">
-            E-ticaret operasyonları, lojistik stratejileri ve girişimcilik üzerine teknik notlar.
+          <p className="text-gray-500 text-lg md:text-xl font-light max-w-xl leading-relaxed">
+            E-ticaret mimarisi ve operasyonel mükemmellik üzerine derinlemesine teknik analizler.
           </p>
-          <div className="h-1 w-20 bg-blue-600 mt-8 rounded-full"></div>
         </header>
 
-        {/* Yazı Listesi */}
-        <div className="grid gap-6">
-          {sortedPosts.map((post) => (
-            <Link 
-              key={post.slug} 
-              href={`/blog/${post.slug}`} 
-              className="group relative block p-8 border border-gray-800/50 rounded-[2rem] bg-[#111] hover:bg-[#161616] transition-all duration-300 hover:border-blue-500/50 hover:shadow-[0_0_30px_-10px_rgba(37,99,235,0.2)]"
-            >
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-[10px] font-bold tracking-[0.2em] text-blue-500 uppercase bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
-                      STRATEJİ
-                    </span>
-                    <time className="text-xs text-gray-600 font-mono italic">
-                      {post.date}
-                    </time>
-                  </div>
-                  
-                  <h2 className="text-2xl md:text-3xl font-bold mb-4 group-hover:text-blue-400 transition-colors leading-tight">
+        {/* Liste: Bento-Modern Akış */}
+        <div className="grid gap-px bg-gray-900/50 border border-gray-900/50 overflow-hidden rounded-3xl">
+          {posts.map((post) => (
+            <Link key={post.slug} href={`/blog/${post.slug}`} className="group relative bg-black p-10 md:p-16 transition-all duration-500 hover:bg-[#050505]">
+              <div className="flex flex-col gap-8">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold tracking-[0.2em] text-gray-600 group-hover:text-blue-500 transition-colors uppercase">
+                    MİMARİ / 01
+                  </span>
+                  <time className="text-[10px] text-gray-800 font-mono italic">{post.date}</time>
+                </div>
+                
+                <div className="max-w-3xl">
+                  <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6 group-hover:text-white text-gray-300 transition-colors leading-tight">
                     {post.title}
                   </h2>
-                  
-                  <p className="text-gray-400 line-clamp-2 leading-relaxed text-sm md:text-base">
+                  <p className="text-gray-600 text-lg leading-relaxed line-clamp-2 font-light group-hover:text-gray-400 transition-colors">
                     {post.description}
                   </p>
                 </div>
-              </div>
 
-              <div className="mt-8 flex items-center gap-2 text-xs font-black tracking-widest text-blue-500 opacity-60 group-hover:opacity-100 group-hover:translate-x-2 transition-all">
-                OKUMAYA DEVAM ET <span>→</span>
+                <div className="flex items-center gap-3 text-[10px] font-black tracking-[0.3em] text-blue-600 opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0">
+                  ANALİZİ İNCELE <span>→</span>
+                </div>
               </div>
             </Link>
           ))}
         </div>
-
-        {/* Footer Linki */}
-        <div className="mt-20 text-center">
-          <Link href="/" className="text-gray-600 hover:text-white transition-colors text-sm font-medium">
-            ← Ana sayfaya dön
-          </Link>
-        </div>
-
       </div>
     </main>
   )
