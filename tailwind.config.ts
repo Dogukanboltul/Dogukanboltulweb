@@ -16,8 +16,19 @@ const config: Config = {
           dark: '#1d4ed8',
         }
       },
+      // Blog sayfalarındaki tipografi genişliği için özel ayar
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: '100ch', // Yazıların çok yayılmaması için
+          },
+        },
+      },
     },
   },
-  plugins: [],
+  // Typography eklentisini buraya ekledik
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 };
 export default config;
