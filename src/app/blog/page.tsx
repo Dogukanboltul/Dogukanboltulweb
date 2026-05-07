@@ -4,11 +4,11 @@ import matter from 'gray-matter'
 import Link from 'next/link'
 
 export default function BlogPage() {
-  const postsDirectory = path.join(process.cwd(), 'posts')
+  // Yolu src/posts olarak güncelledik (Daha güvenli)
+  const postsDirectory = path.join(process.cwd(), 'src/posts')
   
-  // Klasör yoksa hata vermesin, boş dönsün
   if (!fs.existsSync(postsDirectory)) {
-    return <div className="p-10 text-white">Henüz yazı klasörü oluşturulmamış.</div>
+    return <div className="p-10 text-white bg-black min-h-screen">Henüz yazı klasörü bulunamadı.</div>
   }
 
   const fileNames = fs.readdirSync(postsDirectory).filter(fn => fn.endsWith('.md'))
