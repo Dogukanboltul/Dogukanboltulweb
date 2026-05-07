@@ -1,239 +1,251 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { 
-  Activity, ArrowUpRight, Users, Building2, CheckCircle2,
-  Star, Trophy, ShieldCheck, Zap, ExternalLink, Globe, Send, Sparkles
+  CheckCircle2, Send, Fingerprint, X,
+  BarChart3, MessageCircle, ArrowRight, ShoppingBag, Zap, Factory, Wallet
 } from 'lucide-react';
 
-// Hizmet modelleri harici bileşenlerden temiz bir şekilde import ediliyor
-import { IndividualServices, CorporateServices } from './components/Services';
+// --- SUPABASE BAĞLANTISI ---
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// ServiceItem Bileşeni
+const ServiceItem = ({ t, d, isDark = false }: { t: string, d: string, isDark?: boolean }) => (
+  <div className="flex gap-3 items-start group cursor-default">
+    <CheckCircle2 className={isDark ? "text-blue-400" : "text-blue-600"} size={16} />
+    <div className="space-y-1 text-left">
+      <h4 className={`text-[13px] font-bold ${isDark ? "text-white" : "text-slate-900"} leading-tight tracking-tight`}>{t}</h4>
+      <p className={`text-[11px] leading-relaxed ${isDark ? "text-slate-400" : "text-slate-500"}`}>{d}</p>
+    </div>
+  </div>
+);
 
 export default function Home() {
-  // Form State Yönetimi
-  const [formData, setFormData] = useState({ name: '', company: '', email: '', message: '' });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const hasSeen = sessionStorage.getItem('hasSeenPopup');
+      if (!hasSeen) {
+        setShowPopup(true);
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const closePopup = () => {
+    setShowPopup(false);
+    sessionStorage.setItem('hasSeenPopup', 'true');
+  };
+
+  // --- FORM SUBMIT (SUPABASE) ---
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Form aksiyonu buraya bağlanabilir (Supabase, API vb.)
-    setIsSubmitted(true);
-    setTimeout(() => setIsSubmitted(false), 5000);
+    setIsLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const payload = {
+      full_name: formData.get('full_name'),
+      company: formData.get('company'),
+      email: formData.get('email'),
+      phone: formData.get('phone'), // Yeni alan eklendi
+      bottleneck: formData.get('bottleneck'),
+    };
+
+    try {
+      const { error } = await supabase
+        .from('form_submissions')
+        .insert([payload]);
+
+      if (error) throw error;
+
+      setIsSubmitted(true);
+      (e.target as HTMLFormElement).reset();
+      setTimeout(() => setIsSubmitted(false), 5000);
+    } catch (error) {
+      console.error('Hata:', error);
+      alert('Gönderim sırasında bir hata oluştu. Lütfen bilgileri kontrol edin.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <main className="min-h-screen bg-[#fafafa] text-slate-900 selection:bg-blue-600 selection:text-white font-sans overflow-x-hidden">
+    <main className="min-h-screen bg-[#FDFDFD] text-slate-800 selection:bg-blue-600 selection:text-white font-sans antialiased overflow-x-hidden relative">
       
-      {/* 1. NAVİGASYON */}
-      <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/50">
-        <div className="max-w-7xl mx-auto py-4 px-6 md:px-8 flex justify-between items-center h-20">
-          <a href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm group-hover:rotate-6 transition-transform">DB</div>
-            <div className="text-lg md:text-xl font-black tracking-tighter uppercase">
-              DOGUKAN<span className="text-blue-600">BOLTUL</span>
+      {/* WHATSAPP SABİT BUTON */}
+      <a 
+        href="https://wa.me/905307953629" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-[95] flex items-center justify-center bg-[#25D366] text-white w-16 h-16 rounded-full shadow-[0_10px_25_rgba(37,211,102,0.4)] hover:scale-110 active:scale-95 transition-all duration-300 group"
+      >
+        <MessageCircle size={32} fill="white" className="text-white" />
+        <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-white text-slate-900 text-[10px] font-bold px-4 py-2 rounded-xl shadow-xl border border-slate-100 opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap pointer-events-none uppercase tracking-widest hidden md:block">
+          WhatsApp Destek Hattı
+        </span>
+      </a>
+
+      {/* POP-UP VE NAVİGASYON (Aynı Kaldı) */}
+      {showPopup && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] p-8 md:p-10 max-w-lg w-full shadow-2xl relative">
+            <button onClick={closePopup} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition-colors">
+              <X size={24} />
+            </button>
+            <div className="space-y-6 text-center md:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 text-[10px] font-bold tracking-widest uppercase bg-blue-50 text-blue-600 rounded-full">
+                <BarChart3 size={14} /> Ücretsiz Ön Analiz
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 leading-tight">
+                  Tıkanıklıkları <span className="text-blue-600">Ücretsiz</span> Analiz Edelim.
+                </h2>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  Operasyonunuzdaki darboğazları tespit edip size özel çözüm mimarisi sunmamız için formu doldurun.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <a href="#analiz" onClick={closePopup} className="flex items-center justify-between w-full bg-slate-900 text-white px-6 py-4 rounded-2xl font-bold text-sm hover:bg-blue-600 transition-all shadow-lg group">
+                  Hemen Analiz Talebi Oluştur
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </a>
+              </div>
             </div>
-          </a>
-          <div className="hidden md:flex gap-8 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-            <a href="#hizmetler" className="hover:text-blue-600 transition-colors">Hizmetler</a>
-            <a href="#basvuru" className="hover:text-blue-600 transition-colors">Sistem Analiz Formu</a>
-            <a href="#iletisim" className="hover:text-blue-600 transition-colors">İletişim</a>
           </div>
-          <a href="#basvuru" className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg shadow-slate-200">
-            BAŞLA
+        </div>
+      )}
+
+      <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-slate-100">
+        <div className="max-w-6xl mx-auto h-14 px-4 md:px-6 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 bg-slate-900 rounded-sm flex items-center justify-center text-white font-bold text-[8px]">DB</div>
+            <span className="text-[12px] font-bold tracking-tight uppercase text-slate-900">DOGUKAN<span className="text-blue-600">BOLTUL</span></span>
+          </div>
+          <a href="https://wa.me/905307953629" target="_blank" className="text-slate-900 hover:text-blue-600 flex items-center gap-1.5 transition-colors font-bold text-[10px] uppercase tracking-widest">
+            <MessageCircle size={14} /> <span className="hidden sm:inline">İletişim</span>
           </a>
         </div>
       </nav>
 
-      {/* 2. HERO */}
-      <section className="pt-40 md:pt-56 pb-12 md:pb-24 px-6 md:px-8 max-w-7xl mx-auto">
-        <div className="max-w-4xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 mb-8 text-[9px] md:text-[10px] font-black tracking-[0.15em] uppercase bg-white border border-slate-200 text-slate-500 rounded-md">
-            <Activity size={12} className="text-blue-600" /> Operasyon & Sistem Mimarı
+      {/* HERO VE HİZMETLER SECTIONS (Aynı Kaldı) */}
+      <section className="pt-28 md:pt-36 pb-12 px-4 md:px-6 max-w-6xl mx-auto">
+        <div className="max-w-3xl">
+          <div className="inline-flex items-center gap-2 px-2 py-1 mb-6 text-[10px] font-bold tracking-[0.1em] uppercase bg-blue-50 text-blue-600 rounded">
+            Herkes İçin Doğru #Eticaret
           </div>
-          <h1 className="text-5xl md:text-7xl lg:text-[110px] font-black leading-[1.1] md:leading-[0.85] tracking-tighter mb-10 md:mb-14 uppercase">
-            STRATEJİ <br className="hidden md:block" />
-            <span className="text-blue-600 italic">SİSTEMLEŞİR.</span>
+          <h1 className="text-3xl md:text-5xl font-extrabold leading-tight tracking-tight mb-6 text-slate-900">
+            Ticari operasyonun <br className="hidden md:block" /> 
+            <span className="text-blue-600">her katmanında</span> uzmanlık.
           </h1>
-          <p className="text-lg md:text-2xl text-slate-500 leading-snug font-medium tracking-tight max-w-2xl border-l-2 border-blue-600/20 pl-6">
-            Kaotik e-ticaret süreçlerini, denetlenebilir ve ölçeklenebilir dijital sistemlere dönüştürüyoruz. Satış rakamlarına değil, operasyonel karlılığa odaklanın.
+          <p className="text-sm md:text-base text-slate-500 leading-relaxed max-w-xl border-l-2 border-blue-600 pl-5">
+            Bireysel girişimden global fabrika operasyonuna kadar tüm süreçleri, kârlılığı merkeze alan sistem mimarileriyle yönetiyoruz.
           </p>
         </div>
       </section>
 
-      {/* 3. SOSYAL KANIT (YENİLENEN DOLU VE NARİN YAPI) */}
-      <section className="py-20 md:py-32 px-6 md:px-8 max-w-7xl mx-auto border-t border-slate-100">
-        <div className="grid lg:grid-cols-12 gap-16 items-center">
-          
-          {/* Sol Metin Bilgisi */}
-          <div className="lg:col-span-5 space-y-8">
-            <div className="inline-flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-[0.3em]">
-              <Trophy size={16} strokeWidth={2.5} /> Üst Düzey Sektör Tecrübesi
+      {/* HİZMETLER GRID (Aynı Kaldı) */}
+      <section id="hizmetler" className="py-12 px-4 md:px-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+          {/* Hizmet kutuları buraya gelecek (önceki kodun aynısı) */}
+          <div className="flex flex-col space-y-4">
+            <div className="flex items-center gap-2 text-blue-600 text-[10px] font-bold uppercase tracking-widest px-1">
+              <ShoppingBag size={14} /> Şahıs Girişimi İçin Çözümler
             </div>
-            <h2 className="text-5xl md:text-6xl font-black tracking-tighter leading-[0.9] uppercase italic text-slate-900">
-              BİLGİYİ <br />
-              <span className="text-blue-600 not-italic">OPERASYONA</span> <br />
-              DÖNÜŞTÜRÜN.
-            </h2>
-            <p className="text-slate-500 text-lg md:text-xl font-medium leading-relaxed max-w-md">
-              E-ticaret ve finans mimarisi üzerine kurguladığım <span className="text-slate-900 font-bold">50 saatten fazla</span> teknik içerikle, binlerce girişimcinin dijitalleşme sürecine yön verdim.
-            </p>
-            <div className="flex items-center gap-3 bg-white border border-slate-200/60 w-fit px-5 py-3 rounded-2xl shadow-sm">
-              <div className="flex gap-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={14} fill={i === 4 ? "#CBD5E1" : "#EAB308"} className={i === 4 ? "text-slate-200" : "text-yellow-500"} />
-                ))}
-              </div>
-              <span className="text-xs font-black text-slate-400 uppercase tracking-tighter">4.8/5 Eğitmen Puanı</span>
+            <div className="bg-slate-900 p-6 md:p-8 rounded-3xl text-white shadow-xl space-y-6 border border-slate-800 flex-1">
+              <ServiceItem t="Düşük Sermaye & Yüksek Devir" d="Eldeki bütçeyle en hızlı nakit dönüşü sağlayacak ürün gruplarının tespiti." isDark />
+              <ServiceItem t="Bireysel Reklam Yönetimi" d="Minimum bütçe ile pazar yeri reklamlarında maksimum görünürlük ve satış." isDark />
+              <ServiceItem t="Evden Operasyon Kurgusu" d="Kargo ve paketleme süreçlerini ek maliyet yaratmadan yönetme sistemleri." isDark />
+              <ServiceItem t="Pazaryeri Quick-Start" d="Mağaza açılışından ilk satışa kadar olan tüm teknik kurulum ve eğitimler." isDark />
             </div>
           </div>
-
-          {/* Sağ Metrik Kartları */}
-          <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { label: "MEZUN ÖĞRENCİ", val: "5500+", icon: <Users size={24} />, desc: "Global ağda aktif girişimci" },
-              { label: "EĞİTİM SÜRESİ", val: "50+ SAAT", icon: <Activity size={24} />, desc: "Teknik derinlik ve saha pratiği" },
-              { label: "STRATEJİK ODAK", val: "%100", icon: <Zap size={24} />, desc: "Sonuç odaklı otomasyonlar" },
-              { label: "KURS ETİKETİ", val: "ÜST DÜZEY", icon: <ShieldCheck size={24} />, desc: "Sektör standartlarında içerik" }
-            ].map((stat, i) => (
-              <div key={i} className="group bg-white p-8 rounded-[2.5rem] border border-slate-200/60 hover:border-blue-200 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
-                    {stat.icon}
-                  </div>
-                  <ArrowUpRight size={20} className="text-slate-200 group-hover:text-blue-600 transition-colors" />
-                </div>
-                <div className="space-y-1">
-                  <div className="text-4xl font-black text-slate-900 tracking-tighter italic uppercase">{stat.val}</div>
-                  <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{stat.label}</div>
-                  <p className="text-slate-400 text-[11px] font-medium pt-2">{stat.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-        </div>
-      </section>
-
-      {/* 4. HİZMETLER */}
-      <section id="hizmetler" className="py-20 md:py-32 px-6 md:px-8 max-w-7xl mx-auto border-t border-slate-100">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
-           <div>
-             <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase leading-none mb-4 italic">Danışmanlık <br/><span className="text-blue-600 not-italic">Modelleri</span></h2>
-             <p className="text-slate-500 font-medium text-sm md:text-base">Girişimciden kurumsal yapıya; operasyonunuzu inşa ediyoruz.</p>
-           </div>
-           <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em] flex items-center gap-2">
-             <Globe size={14} className="text-blue-600" /> Global Standartlar
-           </p>
-        </div>
-        <div className="grid lg:grid-cols-2 gap-8 md:gap-12">
-          <IndividualServices />
-          <CorporateServices />
-        </div>
-      </section>
-
-      {/* 5. INTERAKTIF BAŞVURU FORMU (DB'DEN AYRILMA / SİSTEM ALAN FORMU) */}
-      <section id="basvuru" className="py-20 md:py-32 px-6 md:px-8 max-w-7xl mx-auto border-t border-slate-100">
-        <div className="bg-white border border-slate-200/80 rounded-[3rem] md:rounded-[4rem] p-8 md:p-20 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-50 rounded-full blur-3xl opacity-40 -translate-y-1/2 translate-x-1/2"></div>
-          
-          <div className="grid lg:grid-cols-12 gap-12 relative z-10">
-            <div className="lg:col-span-5 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 text-[9px] md:text-[10px] font-black tracking-[0.15em] uppercase bg-blue-50 text-blue-600 rounded-md">
-                <Sparkles size={12} /> Ön Analiz & Entegrasyon
-              </div>
-              <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase leading-[0.95]">
-                SİSTEMİNİZİ <br />
-                <span className="text-blue-600">ANALİZ EDELİM.</span>
-              </h2>
-              <p className="text-slate-500 text-sm md:text-base font-medium leading-relaxed">
-                Mevcut operasyonel tıkanıklıklarınızı, pazar yeri entegrasyon sorunlarınızı veya e-ihracat planlarınızı paylaşın. Sizin için en doğru sistem mimarisini kurgulayalım.
-              </p>
+          <div className="flex flex-col space-y-4">
+            <div className="flex items-center gap-2 text-blue-600 text-[10px] font-bold uppercase tracking-widest px-1">
+              <Wallet size={14} /> Toptancılar İçin Çözümler
             </div>
-
-            <div className="lg:col-span-7">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Adınız Soyadınız</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      placeholder="Doğukan Böltül" 
-                      className="w-full bg-slate-50 border border-slate-200/60 rounded-xl px-5 py-4 text-sm font-medium focus:outline-none focus:border-blue-600 focus:bg-white transition-all"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Şirket / Marka Adı</label>
-                    <input 
-                      type="text"
-                      value={formData.company}
-                      onChange={(e) => setFormData({...formData, company: e.target.value})}
-                      placeholder="PoloChef (Opsiyonel)" 
-                      className="w-full bg-slate-50 border border-slate-200/60 rounded-xl px-5 py-4 text-sm font-medium focus:outline-none focus:border-blue-600 focus:bg-white transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">E-Posta Adresiniz</label>
-                  <input 
-                    type="email" 
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    placeholder="iletisim@dogukanboltul.com" 
-                    className="w-full bg-slate-50 border border-slate-200/60 rounded-xl px-5 py-4 text-sm font-medium focus:outline-none focus:border-blue-600 focus:bg-white transition-all"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mevcut Durum & Operasyonel Tıkanıklıklar</label>
-                  <textarea 
-                    rows={4}
-                    required
-                    value={formData.message}
-                    onChange={(e) => setFormData({...formData, message: e.target.value})}
-                    placeholder="Lojistik, stok yönetimi veya pazar yeri algoritmalarında yaşadığınız ana problemleri kısaca özetleyin..." 
-                    className="w-full bg-slate-50 border border-slate-200/60 rounded-xl px-5 py-4 text-sm font-medium focus:outline-none focus:border-blue-600 focus:bg-white transition-all resize-none"
-                  ></textarea>
-                </div>
-
-                <button 
-                  type="submit" 
-                  className="w-full bg-slate-900 text-white py-5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-100"
-                >
-                  {isSubmitted ? 'Talebiniz Alındı ✓' : <>Veriyi Gönder <Send size={14} /></>}
-                </button>
-              </form>
+            <div className="bg-slate-900 p-6 md:p-8 rounded-3xl text-white shadow-xl space-y-6 border border-slate-800 flex-1">
+              <ServiceItem t="Hızlı Nakit Akış Mimari" d="Eldeki yüksek stoklu ürünleri dijital kanallarda hızla likiditeye çevirme stratejileri." isDark />
+              <ServiceItem t="Trend & Veri Analizi" d="Pazarın talebine göre hangi ürünlerin stoklanması gerektiğini gösteren veri modelleri." isDark />
+              <ServiceItem t="Toplu Liste & Entegrasyon" d="Binlerce SKU'nun pazar yerlerine hatasız ve otomatik aktarımı." isDark />
+              <ServiceItem t="B2B'den B2C'ye Geçiş" d="Geleneksel toptancılıktan, doğrudan perakende satışa sancısız geçiş kurgusu." isDark />
+            </div>
+          </div>
+          <div className="flex flex-col space-y-4">
+            <div className="flex items-center gap-2 text-blue-600 text-[10px] font-bold uppercase tracking-widest px-1">
+              <Factory size={14} /> Üreticiler İçin Çözümler
+            </div>
+            <div className="bg-slate-900 p-6 md:p-8 rounded-3xl text-white shadow-xl space-y-6 border border-slate-800 flex-1">
+              <ServiceItem t="Uçtan Uca Markalaşma" d="Üretim gücünü global bir markaya dönüştürecek kimlik ve içerik çalışmaları." isDark />
+              <ServiceItem t="Aracıdan Kurtulma (D2C)" d="Doğrudan son tüketiciye satış yaparak kâr marjını maksimize eden satış modelleri." isDark />
+              <ServiceItem t="Marka Koruma Kalkanı" d="Pazaryerlerinde fiyat kıran ve marka algısını bozan yetkisiz satıcıların engellenmesi." isDark />
+              <ServiceItem t="Global E-İhracat Hattı" d="Üretimden çıkan malın global depolara (FBA vb.) doğrudan sevkiyat kurgusu." isDark />
+            </div>
+          </div>
+          <div className="flex flex-col space-y-4">
+            <div className="flex items-center gap-2 text-blue-600 text-[10px] font-bold uppercase tracking-widest px-1">
+              <Zap size={14} /> Kurumsal Mimari Çözümleri
+            </div>
+            <div className="bg-slate-900 p-6 md:p-8 rounded-3xl text-white shadow-xl space-y-6 border border-slate-800 flex-1">
+              <ServiceItem t="Departman Kurulumu" d="Bağımsız, sürdürülebilir e-ticaret birimi inşası ve profesyonel ekip eğitimi." isDark />
+              <ServiceItem t="ERP & API Otomasyonu" d="Tüm kanalların (muhasebe, stok, fatura) tek merkezden otomatik yönetimi." isDark />
+              <ServiceItem t="Operasyonel Denetim" d="Ekip performansını, reklam ROI oranlarını ve maliyetlerini ölçen mekanizmalar." isDark />
+              <ServiceItem t="Cross-Border E-Commerce" d="Çoklu ülke, çoklu para birimi ve global lojistik ağlarının yönetim mimarisi." isDark />
             </div>
           </div>
         </div>
       </section>
 
-      {/* 6. İLETİŞİM */}
-      <section id="iletisim" className="py-12 md:py-24 px-6 md:px-8 pb-32">
-        <div className="max-w-7xl mx-auto bg-blue-600 rounded-[3rem] md:rounded-[4.5rem] p-12 md:p-28 text-center text-white relative overflow-hidden shadow-2xl">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50"></div>
-          <h2 className="text-4xl md:text-7xl font-black mb-10 leading-tight tracking-tighter relative z-10 uppercase italic">
-            OPERASYONUNUZU <br className="hidden md:block"/> SİSTEME BAĞLAYIN.
-          </h2>
-          <a href="mailto:iletisim@dogukanboltul.com" className="w-full sm:w-auto inline-flex items-center justify-center gap-4 bg-white text-blue-600 px-10 md:px-16 py-6 md:py-8 rounded-[2rem] md:rounded-[2.5rem] font-black text-xl md:text-3xl hover:bg-slate-900 hover:text-white transition-all shadow-2xl relative z-10 active:scale-95">
-            Görüşme Başlat <ArrowUpRight size={32} />
-          </a>
+      {/* ANALİZ FORMU (TELEFON ALANI EKLENDİ) */}
+      <section id="analiz" className="py-12 px-4 md:px-6 max-w-6xl mx-auto">
+        <div className="bg-slate-50 rounded-[2.5rem] p-8 md:p-14 border border-slate-100 flex flex-col lg:flex-row gap-12">
+          <div className="lg:w-1/3 space-y-4 text-left">
+            <div className="inline-flex items-center gap-1.5 text-blue-600 text-[10px] font-bold uppercase tracking-widest">
+              <BarChart3 size={14} /> Stratejik Analiz
+            </div>
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight uppercase">Sistemi <br/> <span className="text-blue-600">Tasarlayalım.</span></h2>
+            <p className="text-[12px] text-slate-500 leading-relaxed font-medium">Mevcut operasyonel tıkanıklıklarınızı paylaşın, teknik çözümle dönüş sağlayalım.</p>
+          </div>
+
+          <form onSubmit={handleFormSubmit} className="lg:w-2/3 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <input name="full_name" type="text" placeholder="Ad Soyad" required className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all outline-none" />
+              <input name="company" type="text" placeholder="Şirket / Marka" className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all outline-none" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <input name="email" type="email" placeholder="E-Posta Adresi" required className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all outline-none" />
+              <input name="phone" type="tel" placeholder="Telefon Numarası (05xx...)" required className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all outline-none" />
+            </div>
+            <textarea name="bottleneck" rows={4} placeholder="En büyük operasyonel darboğazınız nedir?" required className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-[12px] focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all resize-none outline-none"></textarea>
+            
+            <button 
+              type="submit" 
+              disabled={isLoading}
+              className={`w-full py-5 rounded-2xl text-[11px] font-extrabold uppercase tracking-[0.2em] transition-all shadow-xl active:scale-[0.98] ${
+                isSubmitted ? 'bg-green-500 text-white' : 'bg-slate-900 text-white hover:bg-blue-600'
+              }`}
+            >
+              {isLoading ? 'Gönderiliyor...' : isSubmitted ? 'Veriler Gönderildi ✓' : 'Analiz Talebi Oluştur'}
+            </button>
+          </form>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="py-12 border-t border-slate-100 px-6 md:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.4em]">
-            Istanbul © 2026 DOGUKAN BOLTUL — SYSTEM ARCHITECT.
-          </div>
-          <div className="flex gap-6">
-             <a href="https://linkedin.com/in/dogukanboltul" target="_blank" className="text-slate-300 hover:text-blue-600 transition-colors"><ExternalLink size={18} /></a>
-          </div>
-        </div>
+      <footer className="py-20 px-4 md:px-6 max-w-6xl mx-auto text-center border-t border-slate-50">
+        <a 
+          href="https://wa.me/905307953629" 
+          target="_blank"
+          className="inline-flex items-center gap-3 bg-slate-900 text-white px-12 py-6 rounded-full font-bold text-sm hover:bg-blue-600 transition-all shadow-2xl active:scale-95 mb-12"
+        >
+          WhatsApp İle Danışmanlık Al <ArrowRight size={20} />
+        </a>
+        <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.5em]">
+          © 2026 DOGUKAN BOLTUL — ISTANBUL
+        </p>
       </footer>
     </main>
   );
