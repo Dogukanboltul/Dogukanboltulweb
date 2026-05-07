@@ -1,7 +1,6 @@
 import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
-import Link from 'next/link'
 
 export default function BlogPage() {
   const postsDirectory = path.join(process.cwd(), 'src/posts')
@@ -34,12 +33,11 @@ export default function BlogPage() {
 
         <div className="flex flex-col gap-px bg-gray-900/50 border border-gray-900/50 rounded-3xl overflow-hidden">
           {posts.map((post) => (
-            <Link 
+            <a 
               key={post.slug} 
               href={`/blog/${post.slug}`}
-              className="group relative block bg-black p-10 md:p-16 transition-all duration-300 hover:bg-[#080808]"
+              className="group relative block bg-black p-10 md:p-16 transition-all duration-300 hover:bg-[#080808] border-b border-gray-900 last:border-0 cursor-pointer"
             >
-              {/* İçerik */}
               <div className="flex flex-col gap-6 relative z-10 pointer-events-none">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold tracking-widest text-blue-500 uppercase">
@@ -60,7 +58,7 @@ export default function BlogPage() {
                   ANALİZİ OKU <span>→</span>
                 </div>
               </div>
-            </Link>
+            </a>
           ))}
         </div>
       </div>
